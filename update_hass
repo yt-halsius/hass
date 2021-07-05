@@ -1,0 +1,38 @@
+#!/bin/bash
+#Some variables to make changing paths to device and config files easier.
+#
+config_path=/home/pi/hass
+host_path=/dev/serial/by-id/usb-RFXCOM_RFXtrx433_A14SQBV-if00-port0
+container_path=/dev/serial/by-id/usb-RFXCOM_RFXtrx433_A14SQBV-if00-port0
+#Varible to set restart-policy.
+#no = Do not automatically restart the container when it exits.
+#on-failure[:max-retries] Restart only if the container exits with a non-zero exit status. Optionally, limit the number of retries the Docker deamon attempts.
+#unless-stopped = Restart only if the container is explicity stopped or docker itself is stopped or restarted.
+#always= Always restart the container regardless of the exit status. When you specify always, the Docker deamon will try to restart the container indefinitely. The continer will always start on deamon startup, regardless of the current state of the container.
+#
+restart_policy=on-failure:5
+#
+if (($EUID != 0))
+ then
+	 echo "Please run me again as root!"
+	 exit
+ else
+	 (
+	 clear
+	 echo "Updating Home Assistant docker conatier!"
+	 sleep 5
+	clear
+	echo "Stopping container 'Home Assistant'...."
+	docker stop home-assistant
+	echo ""
+	echo "Removing container"
+	docker rm home-assistant
+	echo ""
+	echo "Pulling new image 'Home Assistant'"
+	docker pull homeassistant/home-assistant
+	echo ""
+	echo "Creating new container with 'Home Assistant'"
+	docker run -d --network=host --name home-assistant -v $config_path:/config --device=$host_path:$container_path --restart=$restart_policy  homeassistant/home-assistant
+)
+ fi
+ exit
