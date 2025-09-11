@@ -1,0 +1,10 @@
+- binary_sensor:
+    - name: "Effekttid"
+      unique_id: effekttid_vardagar
+      icon: mdi:flash-alert-outline
+      state: >-
+        {{ is_state('binary_sensor.effektavgift_period','on')
+           and is_state('binary_sensor.workday_sensor','on') }}
+      attributes:
+        effektavgift_period: "{{ states('binary_sensor.effektavgift_period') }}"
+        arbetsdag: "{{ states('binary_sensor.workday_sensor') }}"
