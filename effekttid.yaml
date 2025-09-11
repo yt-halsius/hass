@@ -1,0 +1,122 @@
+- binary_sensor:
+    - name: "Effektavgift period"
+      unique_id: effektavgift_period
+      icon: mdi:flash-alert
+      state: >-
+        {% set now = now() %}
+        {% set y = now.year %}
+        {% if now.month >= 11 %}
+          {% set season_start = as_local(strptime(y|string ~ "-11-01 07:00:00","%Y-%m-%d %H:%M:%S")) %}
+          {% set season_end   = as_local(strptime((y+1)|string ~ "-03-31 19:00:00","%Y-%m-%d %H:%M:%S")) %}
+        {% elif now.month <= 3 %}
+          {% set season_start = as_local(strptime((y-1)|string ~ "-11-01 07:00:00","%Y-%m-%d %H:%M:%S")) %}
+          {% set season_end   = as_local(strptime(y|string ~ "-03-31 19:00:00","%Y-%m-%d %H:%M:%S")) %}
+        {% else %}
+          {% set season_start = as_local(strptime(y|string ~ "-11-01 07:00:00","%Y-%m-%d %H:%M:%S")) %}
+          {% set season_end   = as_local(strptime((y+1)|string ~ "-03-31 19:00:00","%Y-%m-%d %H:%M:%S")) %}
+        {% endif %}
+        {{ now >= season_start and now <= season_end }}
+
+      attributes:
+
+        season_start: >-
+          {% set now = now() %}
+          {% set y = now.year %}
+          {% if now.month >= 11 %}
+            {{ as_local(strptime(y|string ~ "-11-01 07:00:00","%Y-%m-%d %H:%M:%S")) }}
+          {% elif now.month <= 3 %}
+            {{ as_local(strptime((y-1)|string ~ "-11-01 07:00:00","%Y-%m-%d %H:%M:%S")) }}
+          {% else %}
+            {{ as_local(strptime(y|string ~ "-11-01 07:00:00","%Y-%m-%d %H:%M:%S")) }}
+          {% endif %}
+
+        season_end: >-
+          {% set now = now() %}
+          {% set y = now.year %}
+          {% if now.month >= 11 %}
+            {{ as_local(strptime((y+1)|string ~ "-03-31 19:00:00","%Y-%m-%d %H:%M:%S")) }}
+          {% elif now.month <= 3 %}
+            {{ as_local(strptime(y|string ~ "-03-31 19:00:00","%Y-%m-%d %H:%M:%S")) }}
+          {% else %}
+            {{ as_local(strptime((y+1)|string ~ "-03-31 19:00:00","%Y-%m-%d %H:%M:%S")) }}
+          {% endif %}
+
+        start_date: >-
+          {% set dt = state_attr(this.entity_id,'season_start') %}
+          {{ as_timestamp(dt) | timestamp_custom('%Y-%m-%d', true) if dt else '' }}
+
+        start_time: >-
+          {% set dt = state_attr(this.entity_id,'season_start') %}
+          {{ as_timestamp(dt) | timestamp_custom('%H:%M', true) if dt else '' }}
+
+        end_date: >-
+          {% set dt = state_attr(this.entity_id,'season_end') %}
+          {{ as_timestamp(dt) | timestamp_custom('%Y-%m-%d', true) if dt else '' }}
+
+        end_time: >-
+          {% set dt = state_attr(this.entity_id,'season_end') %}
+          {{ as_timestamp(dt) | timestamp_custom('%H:%M', true) if dt else '' }}
+
+        next_change: >-
+          {% set now = now() %}
+          {% set y = now.year %}
+          {% if now.month >= 11 %}
+            {% set season_start = as_local(strptime(y|string ~ "-11-01 07:00:00","%Y-%m-%d %H:%M:%S")) %}
+            {% set season_end   = as_local(strptime((y+1)|string ~ "-03-31 19:00:00","%Y-%m-%d %H:%M:%S")) %}
+          {% elif now.month <= 3 %}
+            {% set season_start = as_local(strptime((y-1)|string ~ "-11-01 07:00:00","%Y-%m-%d %H:%M:%S")) %}
+            {% set season_end   = as_local(strptime(y|string ~ "-03-31 19:00:00","%Y-%m-%d %H:%M:%S")) %}
+          {% else %}
+            {% set season_start = as_local(strptime(y|string ~ "-11-01 07:00:00","%Y-%m-%d %H:%M:%S")) %}
+            {% set season_end   = as_local(strptime((y+1)|string ~ "-03-31 19:00:00","%Y-%m-%d %H:%M:%S")) %}
+          {% endif %}
+          {{ season_end if (now >= season_start and now <= season_end) else season_start }}
+
+        seconds_until_change: >-
+          {% set now = now() %}
+          {% set y = now.year %}
+          {% if now.month >= 11 %}
+            {% set season_start = as_local(strptime(y|string ~ "-11-01 07:00:00","%Y-%m-%d %H:%M:%S")) %}
+            {% set season_end   = as_local(strptime((y+1)|string ~ "-03-31 19:00:00","%Y-%m-%d %H:%M:%S")) %}
+          {% elif now.month <= 3 %}
+            {% set season_start = as_local(strptime((y-1)|string ~ "-11-01 07:00:00","%Y-%m-%d %H:%M:%S")) %}
+            {% set season_end   = as_local(strptime(y|string ~ "-03-31 19:00:00","%Y-%m-%d %H:%M:%S")) %}
+          {% else %}
+            {% set season_start = as_local(strptime(y|string ~ "-11-01 07:00:00","%Y-%m-%d %H:%M:%S")) %}
+            {% set season_end   = as_local(strptime((y+1)|string ~ "-03-31 19:00:00","%Y-%m-%d %H:%M:%S")) %}
+          {% endif %}
+          {% set nc = season_end if (now >= season_start and now <= season_end) else season_start %}
+          {{ (as_timestamp(nc) - as_timestamp(now))|int }}
+
+        time_until_change: >-
+          {# 1) Försök läsa sekunder-attributet #}
+          {% set sec = state_attr(this.entity_id, 'seconds_until_change') %}
+
+          {# 2) Fallback om det är None/okänt: räkna fram själv #}
+          {% if sec is none %}
+            {% set now = now() %}
+            {% set y = now.year %}
+          {% if now.month >= 11 %}
+            {% set season_start = as_local(strptime(y|string ~ "-11-01 07:00:00","%Y-%m-%d %H:%M:%S")) %}
+            {% set season_end   = as_local(strptime((y+1)|string ~ "-03-31 19:00:00","%Y-%m-%d %H:%M:%S")) %}
+          {% elif now.month <= 3 %}
+            {% set season_start = as_local(strptime((y-1)|string ~ "-11-01 07:00:00","%Y-%m-%d %H:%M:%S")) %}
+            {% set season_end   = as_local(strptime(y|string ~ "-03-31 19:00:00","%Y-%m-%d %H:%M:%S")) %}
+          {% else %}
+            {% set season_start = as_local(strptime(y|string ~ "-11-01 07:00:00","%Y-%m-%d %H:%M:%S")) %}
+            {% set season_end   = as_local(strptime((y+1)|string ~ "-03-31 19:00:00","%Y-%m-%d %H:%M:%S")) %}
+          {% endif %}
+            {% set nc = season_end if (now >= season_start and now <= season_end) else season_start %}
+            {% set sec = (as_timestamp(nc) - as_timestamp(now))|int %}
+          {% else %}
+            {% set sec = sec|int %}
+          {% endif %}
+
+          {# 3) Formatera alltid något (minst "0m") #}
+          {% set sign = '' if sec >= 0 else '-' %}
+          {% set s = sec|abs %}
+          {% set d = s // 86400 %}
+          {% set h = (s % 86400) // 3600 %}
+          {% set m = (s % 3600) // 60 %}
+          {{ sign ~ (d ~ 'd ' if d else '') ~ (h ~ 'h ' if (h or d) else '') ~ (m ~ 'm') }}
+
