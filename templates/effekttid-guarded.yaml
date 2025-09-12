@@ -3,8 +3,16 @@
       unique_id: effekttid_vardagar
       icon: mdi:flash-alert-outline
       state: >-
+        {% set tod_entity = 'binary_sensor.effekttid_fonster' %}  {# <-- BYT till din TOD-sensor #}
         {{ is_state('binary_sensor.effektavgift_period','on')
-           and is_state('binary_sensor.workday_sensor','on') }}
+           and is_state('binary_sensor.workday_sensor','on')
+           and is_state(tod_entity,'on') }}
       attributes:
         effektavgift_period: "{{ states('binary_sensor.effektavgift_period') }}"
         arbetsdag: "{{ states('binary_sensor.workday_sensor') }}"
+        time_of_day_entity: >-
+          {% set tod_entity = 'binary_sensor.effekttid_fonster' %}  {# samma som ovan #}
+          {{ tod_entity }}
+        time_of_day_state: >-
+          {% set tod_entity = 'binary_sensor.effekttid_fonster' %}
+          {{ states(tod_entity) }}
