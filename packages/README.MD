@@ -74,8 +74,8 @@ homeassistant:
 type: entities
 title: Effekttid toppar
 entities:
-  - sensor.effekttopp_medel_kW_manad
-  - sensor.effektavgift_straffkostnad_kr_manad
+  - sensor.effekttopp_medel_kw_manad
+  - sensor.effektavgift_straffkostnad_kr_man
   - input_number.ams_top1_kw
   - input_datetime.ams_top1_time
   - input_number.ams_top2_kw
