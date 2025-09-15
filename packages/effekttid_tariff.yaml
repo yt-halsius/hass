@@ -1,0 +1,217 @@
+################################################################################
+# Paket: Effekttid via tariff, timmedel (kW), topp 3, medel & straffkostnad
+# Förutsätter att du redan har: binary_sensor.effekttid (säsong + workday + TOD)
+################################################################################
+
+# (A) W -> kWh via integration (TA BORT om du redan har kWh-sensor)
+sensor:
+  - platform: integration
+    name: ams_energy_kwh
+    source: sensor.ams_a88_p           # <-- BYT till din effektsensor i W
+    unit_prefix: k
+    round: 3
+    method: left
+
+# (B) Utility meter med tariffer: effekttid / övrigt (hourly)
+utility_meter:
+  ams_energy_hourly_tm:
+    source: sensor.ams_a88_houruse     # <-- BYT om du redan har egen kWh-sensor
+    cycle: hourly
+    tariffs:
+      - effekttid
+      - ovrigt
+
+# (C) Hjälpare: topp 1–3 (kW) + tidpunkter och pris (kr/kW, heltal)
+input_number:
+  ams_top1_kw: { name: "Top 1 (kW)", min: 0, max: 100, step: 0.01, unit_of_measurement: kW }
+  ams_top2_kw: { name: "Top 2 (kW)", min: 0, max: 100, step: 0.01, unit_of_measurement: kW }
+  ams_top3_kw: { name: "Top 3 (kW)", min: 0, max: 100, step: 0.01, unit_of_measurement: kW }
+  effektavgift_kr_per_kw: { name: "Effektavgift (kr/kW)", min: 0, max: 1000, step: 1, unit_of_measurement: "kr/kW", mode: box }
+
+input_datetime:
+  ams_top1_time: { name: "Top 1 tid", has_date: true, has_time: true }
+  ams_top2_time: { name: "Top 2 tid", has_date: true, has_time: true }
+  ams_top3_time: { name: "Top 3 tid", has_date: true, has_time: true }
+
+# (D) Templates: medel av topp-3 och straffkostnad
+template:
+  - sensor:
+      - name: "Effekttopp medel (kW, månad)"
+        unique_id: effekttopp_medel_kw_manad
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        state: >-
+          {% set t1 = states('input_number.ams_top1_kw')|float(0) %}
+          {% set t2 = states('input_number.ams_top2_kw')|float(0) %}
+          {% set t3 = states('input_number.ams_top3_kw')|float(0) %}
+          {{ ((t1 + t2 + t3) / 3)|round(2) }}
+
+      - name: "Effektavgift straffkostnad (kr/mån)"
+        unique_id: effektavgift_straffkostnad_kr_manad
+        unit_of_measurement: "kr"
+        icon: mdi:cash-multiple
+        state: >-
+          {% set t1 = states('input_number.ams_top1_kw')|float(0) %}
+          {% set t2 = states('input_number.ams_top2_kw')|float(0) %}
+          {% set t3 = states('input_number.ams_top3_kw')|float(0) %}
+          {% set pris = states('input_number.effektavgift_kr_per_kw')|float(0) %}
+          {{ (((t1 + t2 + t3) / 3) * pris)|round(0) }}
+
+# (E) Automationer (samlat under ett block!)
+automation:
+  # 1) Synka tariff med din binary_sensor.effekttid
+  - id: effekttid_tariff_sync
+    alias: "Effekttid → tariff (utility_meter)"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.effekttid
+      - platform: homeassistant
+        event: start
+    action:
+      # Liten startfördröjning så select-entity hinner registreras vid omstart
+      - choose:
+          - conditions: "{{ trigger.platform == 'homeassistant' }}"
+            sequence:
+              - delay: "00:00:05"
+      - service: select.select_option
+        target:
+          entity_id: select.ams_energy_hourly_tm   # kontrollera att detta är rätt entity-id
+        data:
+          option: >-
+            {{ 'effekttid' if is_state('binary_sensor.effekttid','on') else 'ovrigt' }}
+
+
+  # 2) Uppdatera topp-3 från tariffens last_period (kWh = kW för föregående timme)
+  - id: ams_update_top3_from_tariff
+    alias: "Effekttopp timmedel (tariff) – uppdatera topp 3"
+    mode: single
+    trigger:
+      - platform: time_pattern
+        minutes: 0
+        seconds: 20
+    variables:
+      new_kw: "{{ state_attr('sensor.ams_energy_hourly_tm_effekttid','last_period')|float(0) }}"
+      ts_end: "{{ now().replace(minute=0, second=0, microsecond=0) }}"
+      ts_str: "{{ as_timestamp(ts_end) | timestamp_custom('%Y-%m-%d %H:%M:%S', true) }}"
+    condition:
+      - condition: template
+        value_template: "{{ new_kw > 0 }}"
+    action:
+      - variables:
+          t1: "{{ states('input_number.ams_top1_kw')|float(0) }}"
+          t2: "{{ states('input_number.ams_top2_kw')|float(0) }}"
+          t3: "{{ states('input_number.ams_top3_kw')|float(0) }}"
+          ts1: "{{ states('input_datetime.ams_top1_time') }}"
+          ts2: "{{ states('input_datetime.ams_top2_time') }}"
+          ts3: "{{ states('input_datetime.ams_top3_time') }}"
+      - choose:
+          - conditions: "{{ new_kw >= t1 }}"
+            sequence:
+              - service: input_number.set_value
+                target:
+                  entity_id: input_number.ams_top3_kw
+                data:
+                  value: "{{ t2 }}"
+              - service: input_datetime.set_datetime
+                target:
+                  entity_id: input_datetime.ams_top3_time
+                data:
+                  datetime: "{{ ts2 }}"
+              - service: input_number.set_value
+                target:
+                  entity_id: input_number.ams_top2_kw
+                data:
+                  value: "{{ t1 }}"
+              - service: input_datetime.set_datetime
+                target:
+                  entity_id: input_datetime.ams_top2_time
+                data:
+                  datetime: "{{ ts1 }}"
+              - service: input_number.set_value
+                target:
+                  entity_id: input_number.ams_top1_kw
+                data:
+                  value: "{{ new_kw }}"
+              - service: input_datetime.set_datetime
+                target:
+                  entity_id: input_datetime.ams_top1_time
+                data:
+                  datetime: "{{ ts_str }}"
+          - conditions: "{{ new_kw >= t2 }}"
+            sequence:
+              - service: input_number.set_value
+                target:
+                  entity_id: input_number.ams_top3_kw
+                data:
+                  value: "{{ t2 }}"
+              - service: input_datetime.set_datetime
+                target:
+                  entity_id: input_datetime.ams_top3_time
+                data:
+                  datetime: "{{ ts2 }}"
+              - service: input_number.set_value
+                target:
+                  entity_id: input_number.ams_top2_kw
+                data:
+                  value: "{{ new_kw }}"
+              - service: input_datetime.set_datetime
+                target:
+                  entity_id: input_datetime.ams_top2_time
+                data:
+                  datetime: "{{ ts_str }}"
+          - conditions: "{{ new_kw >= t3 }}"
+            sequence:
+              - service: input_number.set_value
+                target:
+                  entity_id: input_number.ams_top3_kw
+                data:
+                  value: "{{ new_kw }}"
+              - service: input_datetime.set_datetime
+                target:
+                  entity_id: input_datetime.ams_top3_time
+                data:
+                  datetime: "{{ ts_str }}"
+        default: []
+
+  # 3) Valfritt: nollställ topp-3 vid månadsskifte (1:a kl 00:05)
+  - id: ams_reset_top3_monthly
+    alias: "Effekttopp – nollställ topp 3 vid månadsskifte"
+    trigger:
+      - platform: time
+        at: "00:05:00"
+    condition:
+      - condition: template
+        value_template: "{{ now().day == 1 }}"
+    action:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.ams_top1_kw
+        data:
+          value: 0
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.ams_top2_kw
+        data:
+          value: 0
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.ams_top3_kw
+        data:
+          value: 0
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.ams_top1_time
+        data:
+          datetime: "1970-01-01 00:00:00"
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.ams_top2_time
+        data:
+          datetime: "1970-01-01 00:00:00"
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.ams_top3_time
+        data:
+          datetime: "1970-01-01 00:00:00"
