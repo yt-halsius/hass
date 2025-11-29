@@ -1,0 +1,14 @@
+type: vertical-stack
+cards:
+  - type: entities
+    title: Effekttid toppar
+    entities:
+      - entity: sensor.effekttopp_medel_kw_manad
+      - entity: sensor.effektavgift_straffkostnad_kr_man
+      - entity: input_number.ams_top1_kw
+      - entity: input_datetime.ams_top1_time
+      - entity: input_number.ams_top2_kw
+      - entity: input_datetime.ams_top2_time
+      - entity: input_number.ams_top3_kw
+      - entity: input_datetime.ams_top3_time
+      - entity: input_number.effektavgift_kr_per_kw
