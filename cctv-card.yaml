@@ -1,0 +1,175 @@
+type: grid
+cards:
+  - camera_view: live
+    type: picture-glance
+    entities:
+      - entity: camera.ptz_mainstream
+        tap_action:
+          action: call-service
+          service: onvif.ptz
+          service_data:
+            entity_id: camera.ptz_mainstream
+            pan: LEFT
+            speed: 1
+            distance: 0.7
+            move_mode: ContinuousMove
+        name: Pan Left
+        show_state: false
+        icon: mdi:arrow-left
+        show_icon: true
+      - entity: camera.ptz_mainstream
+        tap_action:
+          action: call-service
+          service: onvif.ptz
+          service_data:
+            entity_id: camera.ptz_mainstream
+            tilt: UP
+            speed: 1
+            distance: 0.3
+            move_mode: ContinuousMove
+        name: Tilt Up
+        icon: mdi:arrow-up
+      - entity: camera.ptz_mainstream
+        tap_action:
+          action: call-service
+          service: onvif.ptz
+          service_data:
+            entity_id: camera.ptz_mainstream
+            tilt: DOWN
+            speed: 1
+            distance: 0.3
+            move_mode: ContinuousMove
+        name: Tilt Down
+        icon: mdi:arrow-down
+      - entity: camera.ptz_mainstream
+        tap_action:
+          action: call-service
+          service: onvif.ptz
+          service_data:
+            entity_id: camera.ptz_mainstream
+            pan: RIGHT
+            speed: 1
+            distance: 0.7
+            move_mode: ContinuousMove
+        name: Pan Right
+        icon: mdi:arrow-right
+        show_icon: true
+      - entity: camera.ptz_mainstream
+        tap_action:
+          action: call-service
+          service: onvif.ptz
+          service_data:
+            entity_id: camera.ptz_mainstream
+            zoom: ZOOM_IN
+            speed: 1
+            distance: 0.3
+            move_mode: ContinuousMove
+        name: Zoom IN
+        icon: mdi:plus
+        show_icon: true
+      - entity: camera.ptz_mainstream
+        tap_action:
+          action: call-service
+          service: onvif.ptz
+          service_data:
+            entity_id: camera.ptz_mainstream
+            zoom: ZOOM_OUT
+            speed: 1
+            distance: 0.3
+            move_mode: ContinuousMove
+        name: Zoom Out
+        icon: mdi:minus
+        show_icon: true
+      - entity: camera.ptz_mainstream
+        tap_action:
+          action: call-service
+          service: onvif.ptz
+          service_data:
+            entity_id: camera.ptz_mainstream
+            preset: 1
+            move_mode: GotoPreset
+        name: Go to preset 2
+        icon: mdi:home
+        show_icon: true
+      - entity: camera.ptz_mainstream
+        tap_action:
+          action: call-service
+          service: onvif.ptz
+          service_data:
+            entity_id: camera.ptz_mainstream
+            preset: 2
+            move_mode: GotoPreset
+        name: Go to home
+        icon: mdi:keyboard-f2
+        show_icon: true
+      - entity: camera.ptz_mainstream
+        tap_action:
+          action: call-service
+          service: onvif.ptz
+          service_data:
+            entity_id: camera.ptz_mainstream
+            preset: 3
+            move_mode: GotoPreset
+        name: Go to preset 3
+        icon: mdi:keyboard-f3
+        show_icon: true
+      - entity: camera.ptz_mainstream
+        tap_action:
+          action: call-service
+          service: onvif.ptz
+          service_data:
+            entity_id: camera.ptz_mainstream
+            preset: 6
+            move_mode: GotoPreset
+        name: Go to preset 6
+        icon: mdi:keyboard-f6
+        show_icon: true
+      - entity: camera.ptz_mainstream
+        tap_action:
+          action: call-service
+          service: onvif.ptz
+          service_data:
+            entity_id: camera.ptz_mainstream
+            preset: 11
+            move_mode: GotoPreset
+        name: Go to preset 11
+        icon: mdi:keyboard-f11
+        show_icon: true
+    camera_image: camera.ptz_mainstream
+    grid_options:
+      columns: 30
+      rows: 7
+  - camera_view: live
+    type: picture-glance
+    entities: []
+    camera_image: camera.kamera_knut_mainstream
+    grid_options:
+      columns: 30
+      rows: 7
+  - camera_view: live
+    type: picture-glance
+    entities: []
+    camera_image: camera.kamera_bro_mainstream
+    grid_options:
+      columns: 30
+      rows: 7
+  - camera_view: live
+    type: picture-glance
+    entities: []
+    camera_image: camera.knut_syd_mediaprofile_channel1_mainstream
+    grid_options:
+      columns: 30
+      rows: 7
+  - camera_view: live
+    type: picture-glance
+    entities: []
+    camera_image: camera.knut_norr_mediaprofile_channel1_mainstream
+    grid_options:
+      columns: 30
+      rows: 7
+  - camera_view: live
+    fit_mode: cover
+    type: picture-glance
+    entities: []
+    camera_image: camera.kallare_profile1
+column_span: 10
